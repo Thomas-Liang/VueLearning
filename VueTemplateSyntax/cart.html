@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carts</title>
+    <style>
+        .active {
+            background-color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- v-bind:title = :title -->
+        <h2 :title="title">{{title}}</h2>
+        <!--user input-->
+        <p>
+            <input type="text" v-model="course" v-on:keydown.enter="addCourse" />
+            <button @click="addCourse">Add Course</button>
+        </p>
+        <!-- condition render -->
+        <p v-if="courses.length == 0">there is no course information.</p>
+        <div id="course-list" v-else>
+            <!-- v-for list render -->
+            <!-- class -->
+            <!-- <div v-for="course in courses" :key="course" :class="{active:selectedCourse === course}" @click="selectedCourse = course">{{ course }}</div>-->
+            <!-- style -->
+            <div v-for="course in courses" :key="course" :style="{backgroundColor:(selectedCourse === course ? '#666': 'transparent')}" @click="selectedCourse = course">{{ course }}</div>
+        </div>
+
+    </div>
+    <!-- import vue.js -->
+    <script src="vue.js"></script>
+    <script>
+        //create an Vue instance
+        const app = new Vue({
+            el: "#app",
+            data() {
+                return {
+                    title: "Hi,Cart",
+                    course: "",
+                    selectedCourse: "",
+                    courses: ["Web", "Python"],
+                };
+            },
+            methods: {
+                addCourse() {
+                    //push the new course into courses
+                    this.courses.push(this.course);
+                    //clear the new course
+                    this.course = "";
+                }
+            },
+        });
+    </script>
+</body>
+
+</html>
