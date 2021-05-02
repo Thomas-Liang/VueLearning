@@ -10,12 +10,25 @@
         .active {
             background-color: #666;
         }
+        
+        .message-box {
+            padding: 10px 20px;
+            background: #4fc08d;
+            border: 1px solid #42b983;
+        }
+        
+        .message-box-close {
+            float: right;
+        }
     </style>
 </head>
 
 <body>
     <div id="app">
-        <!-- v-bind:title = :title -->
+        <message :show.sync="show">
+            Add course successfully
+        </message>
+        <!-- v-bind:title=: title -->
         <h2 :title="title">{{title}}</h2>
         <!-- add course -->
         <course-add v-model="course" @add-course="addCourse"></course-add>
@@ -34,6 +47,19 @@
     <!-- import vue.js -->
     <script src="vue.js"></script>
     <script>
+        //pop up component
+        Vue.component('message', {
+            props: ['show'],
+            template: `
+                <div class="message-box" v-if="show">
+                    <!--slot to get the message content-->
+                    <slot></slot>
+                    <span class="message-box-close"
+                     @click="$emit('update:show',false)">X</span>
+                </div>
+            `
+        });
+
         // course add component
         Vue.component('course-add', {
             props: ['value'],
@@ -101,7 +127,8 @@
                     title: "Hi,Cart",
                     course: "",
                     courses: [],
-                    totalCount: 0
+                    totalCount: 0,
+                    show: false
                 };
             },
             async created() {
@@ -117,6 +144,8 @@
                     this.courses.push(this.course);
                     //clear the new course
                     this.course = "";
+                    //set the show as true
+                    this.show = true;
                 }
             },
             //computed attributes with cache,
