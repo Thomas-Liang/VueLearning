@@ -1,31 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
 </head>
+
 <body>
     <!-- 宿主文件 -->
-    <div id="app">
-        {{title}}
-    </div>
+    <div id="app">{{title}}</div>
     <script src="vue.js"></script>
     <script>
         // 实例化Vue对象
         const app = new Vue({
-            el:'#app',
+            el: "#app",
             data() {
                 return {
-                    title: 'Hello,Vue'
-                }
+                    title: "Hello,Vue",
+                };
             },
-        })
+        });
         // 改变title内容
         setTimeout(() => {
-            app.title = 'Nice, Vue';
+            app.title = "Nice, Vue";
         }, 1000);
     </script>
 </body>
+
 </html>
