@@ -10,32 +10,65 @@
         .active {
             background-color: #666;
         }
-        
+
         .message-box {
             padding: 10px 20px;
+
+        }
+
+        .success {
             background: #4fc08d;
             border: 1px solid #42b983;
         }
-        
+
+        .warning {
+            background: #f66;
+            border: 1px solid #d63200;
+        }
+
         .message-box-close {
             float: right;
+        }
+        /* animation class */
+        .fade-enter, .fade-leave-to {
+            opacity: 0;
+        }
+        .fade-enter-active,.fade-leave-active {
+            transition: opacity 1.5s;
         }
     </style>
 </head>
 
 <body>
     <div id="app">
-        <message :show.sync="show">
+        <!-- <message :show.sync="show" class="success"> -->
+        <message ref="msgSuccess" class="success">
             <template v-slot:title="slotProps">
                 <strong>{{slotProps.title}}</strong>
             </template>
             <template>Add course successfully</template>
-            
+        </message>
+        <!-- <message :show.sync="showWarn" class="warning"> -->
+        <message ref="msgWarning" class="warning">
+            <template v-slot:title>
+                <strong>Warning</strong>
+            </template>
+            <template>Please input the course name</template>
         </message>
         <!-- v-bind:title=: title -->
         <h2 :title="title">{{title}}</h2>
+
+        <!-- toolbar -->
+        <div class="toobar">
+            <button @click="$bus.$emit('message-close')">clear messages</button>
+        </div>
         <!-- add course -->
         <course-add v-model="course" @add-course="addCourse"></course-add>
+        <!-- mass change -->
+        <p>
+            <input type="text" v-model:number="price">
+            <button @click="batchUpdate">mass change price</button>
+        </p>
         <!-- course list component -->
         <course-list :courses="courses"></course-list>
         <!-- total count -->
@@ -45,25 +78,53 @@
             <!-- computed -->
             <!-- total count:{{total}}</p> -->
             <!-- watch -->
-            total count:{{totalCount}}</p>
+            total count:{{totalCount}}
+        </p>
         </p>
     </div>
     <!-- import vue.js -->
     <script src="vue.js"></script>
     <script>
+        //bus
+        Vue.prototype.$bus = new Vue();
         //pop up component
         Vue.component('message', {
-            props: ['show'],
+            // props: ['show'],
+            data() {
+                return {
+                    show: false
+                }
+            },
             template: `
-                <div class="message-box" v-if="show">
-                    <!--slot with name-->
-                    <slot name="title" title="congratulations"></slot>
-                    <!--slot to get the message content-->
-                    <slot></slot>
-                    <span class="message-box-close"
-                     @click="$emit('update:show',false)">X</span>
-                </div>
-            `
+              <transition name="fade">
+                    <div class="message-box" v-if="show">
+                        <!--slot with name-->
+                        <slot name="title" title="congratulations"></slot>
+                        <!--slot to get the message content-->
+                        <slot></slot>
+                        <span class="message-box-close"
+                        @click="toggle">X</span>
+                    </div>
+              </transition>
+            `,
+            mounted(){
+                this.$bus.$on('message-close',()=>{
+                    //Clear the messages
+                    this.toggle(true);
+                })
+            },
+            methods: {
+                toggle(isClear) {
+                    if(!isClear){
+                        //Toggle
+                        this.show = !this.show;
+                    }else{
+                        //Clear
+                        this.show = false;
+                    }
+                    
+                }
+            },
         });
 
         // course add component
@@ -73,7 +134,7 @@
                 <div>      
                     <!--user input-->
                     <p>
-                        <input type="text" :value="value" @input="onInput" v-on:keydown.enter="addCourse" />
+                        <input type="text" :value="value" @input="onInput" v-on:keydown.enter="addCourse" ref="inp">
                         <button @click="addCourse">Add Course</button>
                     </p>
                 </div>
@@ -87,6 +148,10 @@
                 onInput(e) {
                     this.$emit('input', e.target.value);
                 }
+            },
+            mounted () {
+                //set the input focus
+                this.$refs.inp.focus();
             },
         });
         // course list component
@@ -109,9 +174,13 @@
                 <div id="course-list" v-else>
                     <!-- v-for list render -->
                     <!-- class -->
-                    <!-- <div v-for="course in courses" :key="course" :class="{active:selectedCourse === course}" @click="selectedCourse = course">{{ course }}</div>-->
+                    <!-- <div v-for="course in courses" :key="course.name" :class="{active:selectedCourse === course}" @click="selectedCourse = course">{{ course }}</div>-->
                     <!-- style -->
-                    <div v-for="course in courses" :key="course" :style="{backgroundColor:(selectedCourse === course ? '#666': 'transparent')}" @click="selectedCourse = course">{{ course }}</div>
+                    <transition-group name="fade">
+                        <div v-for="course in courses" :key="course.name" :style="{backgroundColor:(selectedCourse === course ? '#666': 'transparent')}"
+                        @click="selectedCourse = course">{{ course.name }} - ￥{{course.price}}
+                        </div>
+                    </transition-group>
                 </div>
             </div>
             `
@@ -121,7 +190,7 @@
         function getCourses() {
             return new Promise(resolve => {
                 setTimeout(() => {
-                    resolve(["Web", "Python"]);
+                    resolve([{ name: "Web" }, { name: "Python" }]);
                 }, 2000);
             })
         };
@@ -134,24 +203,43 @@
                     course: "",
                     courses: [],
                     totalCount: 0,
-                    show: false
+                    // show: false,
+                    // showWarn: false,
+                    price: 0
                 };
             },
             async created() {
                 //component instance created, unmounted,dom not exist
                 const courses = await getCourses();
                 this.courses = courses;
+                this.batchUpdate();
             },
             // dom generated
-            mounted() {},
+            mounted() { },
             methods: {
                 addCourse() {
-                    //push the new course into courses
-                    this.courses.push(this.course);
-                    //clear the new course
-                    this.course = "";
-                    //set the show as true
-                    this.show = true;
+                    if (this.course) {
+                        //push the new course into courses
+                        this.courses.push({name:this.course,price:this.price});
+                        //clear the new course
+                        this.course = "";
+                        //set the show as true
+                        // this.show = true;
+                        this.$refs.msgSuccess.toggle();
+                    } else {
+                        //set the showWarn as true
+                        // this.showWarn = true;
+                        this.$refs.msgWarning.toggle();
+                    }
+
+
+                },
+                batchUpdate() {
+                    this.courses.forEach(c => {
+                        //c.price = this.price;
+                        // Vue.set(c,"price", this.price);
+                        this.$set(c, "price", this.price);
+                    })
                 }
             },
             //computed attributes with cache,
