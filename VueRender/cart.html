@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carts</title>
+    <style>
+        .active {
+            background-color: #666;
+        }
+
+        .message-box {
+            padding: 10px 20px;
+
+        }
+
+        .success {
+            background: #4fc08d;
+            border: 1px solid #42b983;
+        }
+
+        .warning {
+            background: #f66;
+            border: 1px solid #d63200;
+        }
+
+        .message-box-close {
+            float: right;
+        }
+
+        .icon {
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.15em;
+            fill: currentColor;
+            overflow: hidden;
+        }
+    </style>
+    <script src="https://at.alicdn.com/t/font_2527309_t5ufzs6cesg.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- <message :show.sync="show" class="success"> -->
+        <message ref="msgSuccess" class="success">
+            <template v-slot:title="slotProps">
+                <strong>{{slotProps.title}}</strong>
+            </template>
+            <template>Add course successfully</template>
+        </message>
+        <!-- <message :show.sync="showWarn" class="warning"> -->
+        <message ref="msgWarning" class="warning">
+            <template v-slot:title>
+                <strong>Warning</strong>
+            </template>
+            <template>Please input the course name</template>
+        </message>
+        <!-- heading component -->
+        <heading level="1" :title="title" icon="cart">
+            {{title}}
+        </heading>
+        <!-- v-bind:title=: title -->
+        <h2 :title="title">
+            <svg class="icon">
+                <use xlink:href="#iconcart"></use>
+            </svg>
+            {{title}}
+        </h2>
+
+        <!-- toolbar -->
+        <div class="toobar">
+            <button @click="$bus.$emit('message-close')">clear messages</button>
+        </div>
+        <!-- add course -->
+        <course-add v-model="course" @add-course="addCourse"></course-add>
+        <!-- mass change -->
+        <p>
+            <input type="text" v-model:number="price">
+            <button @click="batchUpdate">mass change price</button>
+        </p>
+        <!-- course list component -->
+        <course-list :courses="courses"></course-list>
+        <!-- total count -->
+        <p>
+            <!-- expression -->
+            <!-- total count:{{courses.length + ' courses'}} -->
+            <!-- computed -->
+            <!-- total count:{{total}}</p> -->
+            <!-- watch -->
+            total count:{{totalCount}}
+        </p>
+        </p>
+    </div>
+    <!-- import vue.js -->
+    <script src="vue.js"></script>
+    <script>
+        //bus
+        Vue.prototype.$bus = new Vue();
+        //heading
+        Vue.component('heading', {
+            props: {
+                level: {
+                    type: String,
+                    required: true
+                },
+                title: {
+                    type: String,
+                    default: ''
+
+
+                },
+                icon: {
+                    type: String
+                }
+            },
+            //render function
+            render(h) {
+                //children array
+                let children = [];
+                //icon attributes
+                if (this.icon) {
+                    children.push(h(
+                        'svg',
+                        { class: 'icon' },
+                        [h('use', { attrs: { 'xlink:href': '#icon' + this.icon } })]
+                    ))
+                }
+                children = children.concat(this.$slots.default);
+                //return vnode-- snabbdom
+                return h(
+                    'h' + this.level,
+                    { attrs: { title: this.title } },
+                    children,
+                );
+            }
+        });
+        //pop up component
+        Vue.component('message', {
+            // props: ['show'],
+            data() {
+                return {
+                    show: false
+                }
+            },
+            template: `
+                <div class="message-box" v-if="show">
+                    <!--slot with name-->
+                    <slot name="title" title="congratulations"></slot>
+                    <!--slot to get the message content-->
+                    <slot></slot>
+                    <span class="message-box-close"
+                     @click="toggle">X</span>
+                </div>
+            `,
+            mounted() {
+                this.$bus.$on('message-close', () => {
+                    //Clear the messages
+                    this.toggle(true);
+                })
+            },
+            methods: {
+                toggle(isClear) {
+                    if (!isClear) {
+                        //Toggle
+                        this.show = !this.show;
+                    } else {
+                        //Clear
+                        this.show = false;
+                    }
+
+                }
+            },
+        });
+
+        // course add component
+        Vue.component('course-add', {
+            props: ['value'],
+            template: `
+                <div>      
+                    <!--user input-->
+                    <p>
+                        <input type="text" :value="value" @input="onInput" v-on:keydown.enter="addCourse" ref="inp">
+                        <button @click="addCourse">Add Course</button>
+                    </p>
+                </div>
+                `,
+            methods: {
+                addCourse() {
+                    //trigger the event to parent to process the add course event
+                    this.$emit('add-course');
+
+                },
+                onInput(e) {
+                    this.$emit('input', e.target.value);
+                }
+            },
+            mounted() {
+                //set the input focus
+                this.$refs.inp.focus();
+            },
+        });
+        // course list component
+        Vue.component('course-list', {
+            data() {
+                return {
+                    selectedCourse: "",
+                }
+            },
+            props: {
+                courses: {
+                    type: Array,
+                    default: []
+                }
+            },
+            template: `
+            <div>      
+                <!-- condition render -->
+                <p v-if="courses.length == 0">there is no course information.</p>
+                <div id="course-list" v-else>
+                    <!-- v-for list render -->
+                    <!-- class -->
+                    <!-- <div v-for="course in courses" :key="course.name" :class="{active:selectedCourse === course}" @click="selectedCourse = course">{{ course }}</div>-->
+                    <!-- style -->
+                    <div v-for="course in courses" :key="course.name" :style="{backgroundColor:(selectedCourse === course ? '#666': 'transparent')}"
+                    @click="selectedCourse = course">{{ course.name }} - ￥{{course.price}}</div>
+                </div>
+            </div>
+            `
+        });
+
+        //async function
+        function getCourses() {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve([{ name: "Web" }, { name: "Python" }]);
+                }, 2000);
+            })
+        };
+        //create an Vue instance
+        const app = new Vue({
+            el: "#app",
+            data() {
+                return {
+                    title: "Hi,Cart",
+                    course: "",
+                    courses: [],
+                    totalCount: 0,
+                    // show: false,
+                    // showWarn: false,
+                    price: 0
+                };
+            },
+            async created() {
+                //component instance created, unmounted,dom not exist
+                const courses = await getCourses();
+                this.courses = courses;
+                this.batchUpdate();
+            },
+            // dom generated
+            mounted() { },
+            methods: {
+                addCourse() {
+                    if (this.course) {
+                        //push the new course into courses
+                        this.courses.push({ name: this.course, price: this.price });
+                        //clear the new course
+                        this.course = "";
+                        //set the show as true
+                        // this.show = true;
+                        this.$refs.msgSuccess.toggle();
+                    } else {
+                        //set the showWarn as true
+                        // this.showWarn = true;
+                        this.$refs.msgWarning.toggle();
+                    }
+
+
+                },
+                batchUpdate() {
+                    this.courses.forEach(c => {
+                        //c.price = this.price;
+                        // Vue.set(c,"price", this.price);
+                        this.$set(c, "price", this.price);
+                    })
+                }
+            },
+            //computed attributes with cache,
+            //the page did not render again unless the value for it changed.
+            computed: {
+                total() {
+                    return this.courses.length + ' courses';
+                }
+            },
+            //watch
+            //it did not trigger immediately generated by vwatcher template
+            // watch: {
+            //     courses(newValue, oldValue) {
+            //         this.totalCount = newValue.length + 'courses';
+            //     }
+            // },
+            //it trigger immediately generated by vwatcher-options template
+            watch: {
+                courses: {
+                    immediate: true, //trigger immediately
+                    //deep: true, //for deep arrays
+                    handler(newValue, oldValue) {
+                        this.totalCount = newValue.length + 'courses';
+                    }
+                }
+            },
+        });
+    </script>
+</body>
+
+</html>
+
+</html>
